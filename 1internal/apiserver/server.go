@@ -7,7 +7,6 @@ package apiserver
 import (
 	"context"
 	"easy-go/1internal/apiserver/config"
-	"fmt"
 
 	"easy-go/1internal/apiserver/store/mysql"
 	genericoptions "easy-go/1internal/pkg/options"
@@ -160,16 +159,16 @@ func buildGenericConfig(cfg *config.Config) (genericConfig *genericapiserver.Con
 	return
 }
 
-//nolint: unparam
-func buildExtraConfig(cfg *config.Config) (*ExtraConfig, error) {
-	return &ExtraConfig{
-		Addr:         fmt.Sprintf("%s:%d", cfg.GRPCOptions.BindAddress, cfg.GRPCOptions.BindPort),
-		MaxMsgSize:   cfg.GRPCOptions.MaxMsgSize,
-		ServerCert:   cfg.SecureServing.ServerCert,
-		mysqlOptions: cfg.MySQLOptions,
-		// etcdOptions:      cfg.EtcdOptions,
-	}, nil
-}
+// //nolint: unparam
+// func buildExtraConfig(cfg *config.Config) (*ExtraConfig, error) {
+// 	return &ExtraConfig{
+// 		Addr:         fmt.Sprintf("%s:%d", cfg.GRPCOptions.BindAddress, cfg.GRPCOptions.BindPort),
+// 		MaxMsgSize:   cfg.GRPCOptions.MaxMsgSize,
+// 		ServerCert:   cfg.SecureServing.ServerCert,
+// 		mysqlOptions: cfg.MySQLOptions,
+// 		// etcdOptions:      cfg.EtcdOptions,
+// 	}, nil
+// }
 
 func (s *apiServer) initRedisStore() {
 	ctx, cancel := context.WithCancel(context.Background())

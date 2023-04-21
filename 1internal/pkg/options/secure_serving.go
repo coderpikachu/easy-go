@@ -7,7 +7,6 @@ package options
 import (
 	"fmt"
 	"net"
-	"path"
 
 	"github.com/spf13/pflag"
 	_ "github.com/spf13/pflag"
@@ -48,17 +47,17 @@ type GeneratableKeyCert struct {
 }
 
 // NewSecureServingOptions creates a SecureServingOptions object with default parameters.
-func NewSecureServingOptions() *SecureServingOptions {
-	return &SecureServingOptions{
-		BindAddress: "0.0.0.0",
-		BindPort:    8443,
-		Required:    true,
-		ServerCert: GeneratableKeyCert{
-			PairName:      "iam",
-			CertDirectory: "/var/run/iam",
-		},
-	}
-}
+// func NewSecureServingOptions() *SecureServingOptions {
+// 	return &SecureServingOptions{
+// 		BindAddress: "0.0.0.0",
+// 		BindPort:    8443,
+// 		Required:    true,
+// 		ServerCert: GeneratableKeyCert{
+// 			PairName:      "iam",
+// 			CertDirectory: "/var/run/iam",
+// 		},
+// 	}
+// }
 
 // ApplyTo applies the run options to the method receiver and returns self.
 // func (s *SecureServingOptions) ApplyTo(c *server.Config) error {
@@ -138,18 +137,18 @@ func (s *SecureServingOptions) Complete() error {
 		return nil
 	}
 
-	keyCert := &s.ServerCert.CertKey
-	if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
-		return nil
-	}
+	// keyCert := &s.ServerCert.CertKey
+	// if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
+	// 	return nil
+	// }
 
-	if len(s.ServerCert.CertDirectory) > 0 {
-		if len(s.ServerCert.PairName) == 0 {
-			return fmt.Errorf("--secure.tls.pair-name is required if --secure.tls.cert-dir is set")
-		}
-		keyCert.CertFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".crt")
-		keyCert.KeyFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".key")
-	}
+	// if len(s.ServerCert.CertDirectory) > 0 {
+	// 	if len(s.ServerCert.PairName) == 0 {
+	// 		return fmt.Errorf("--secure.tls.pair-name is required if --secure.tls.cert-dir is set")
+	// 	}
+	// 	keyCert.CertFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".crt")
+	// 	keyCert.KeyFile = path.Join(s.ServerCert.CertDirectory, s.ServerCert.PairName+".key")
+	// }
 
 	return nil
 }

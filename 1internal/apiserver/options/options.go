@@ -59,7 +59,7 @@ func (o *Options) Flags() (fss cliflag.NamedFlagSets) {
 	o.RedisOptions.AddFlags(fss.FlagSet("redis"))
 	o.FeatureOptions.AddFlags(fss.FlagSet("features"))
 	o.InsecureServing.AddFlags(fss.FlagSet("insecure serving"))
-	o.SecureServing.AddFlags(fss.FlagSet("secure serving"))
+	//o.SecureServing.AddFlags(fss.FlagSet("secure serving"))
 	o.Log.AddFlags(fss.FlagSet("logs"))
 
 	return fss
