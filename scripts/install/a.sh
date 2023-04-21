@@ -1,0 +1,21 @@
+#test
+MY_DIR1="${MY_DIR1:-zoo}"
+echo $MY_DIR1
+mkdir -p ${IAM_ROOT}/${MY_DIR1}
+# 设置统一的密码，方便记忆
+PASSWORD10=${PASSWORD10:-'easy2001'}
+echo $PASSWORD10
+# Linux系统 going 用户
+LINUX_USERNAME10=${LINUX_USERNAME10:-easy}
+echo $LINUX_USERNAME10
+# Linux root & going 用户密码
+LINUX_PASSWORD10=${LINUX_PASSWORD10:-${PASSWORD10}}
+echo $LINUX_PASSWORD10
+
+LOCAL_OUTPUT_ROOT1="${IAM_ROOT}/${OUT_DIR10:-_output}"
+echo $LOCAL_OUTPUT_ROOT1
+
+IAM_DATA_DIR10=${IAM_DATA_DIR10:-${IAM_ROOT}/${MY_DIR1}/data/iam} 
+echo $IAM_DATA_DIR10
+
+
