@@ -7,6 +7,8 @@ package apiserver
 import (
 	"context"
 	"easy-go/1internal/apiserver/config"
+	"easy-go/1internal/apiserver/store"
+	"fmt"
 
 	"easy-go/1internal/apiserver/store/mysql"
 	genericoptions "easy-go/1internal/pkg/options"
@@ -15,12 +17,15 @@ import (
 	"easy-go/2pkg/shutdown"
 	"easy-go/2pkg/shutdown/shutdownmanagers/posixsignal"
 	"easy-go/2pkg/storage"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type apiServer struct {
-	gs           *shutdown.GracefulShutdown
-	redisOptions *genericoptions.RedisOptions
-	//gRPCAPIServer    *grpcAPIServer
+	gs               *shutdown.GracefulShutdown
+	redisOptions     *genericoptions.RedisOptions
+	gRPCAPIServer    *grpcAPIServer
 	genericAPIServer *genericapiserver.GenericAPIServer
 }
 
@@ -30,9 +35,9 @@ type preparedAPIServer struct {
 
 // ExtraConfig defines extra configuration for the iam-apiserver.
 type ExtraConfig struct {
-	Addr         string
-	MaxMsgSize   int
-	ServerCert   genericoptions.GeneratableKeyCert
+	Addr       string
+	MaxMsgSize int
+	//ServerCert   genericoptions.GeneratableKeyCert
 	mysqlOptions *genericoptions.MySQLOptions
 	// etcdOptions      *genericoptions.EtcdOptions
 }
@@ -46,25 +51,25 @@ func createAPIServer(cfg *config.Config) (*apiServer, error) {
 		return nil, err
 	}
 
-	// extraConfig, err := buildExtraConfig(cfg)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	extraConfig, err := buildExtraConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	genericServer, err := genericConfig.Complete().New()
 	if err != nil {
 		return nil, err
 	}
-	// extraServer, err := extraConfig.complete().New()
-	// if err != nil {
-	// 	return nil, err
-	// }
+	extraServer, err := extraConfig.complete().New()
+	if err != nil {
+		return nil, err
+	}
 
 	server := &apiServer{
 		gs:               gs,
 		redisOptions:     cfg.RedisOptions,
 		genericAPIServer: genericServer,
-		//gRPCAPIServer:    extraServer,
+		gRPCAPIServer:    extraServer,
 	}
 
 	return server, nil
@@ -114,29 +119,31 @@ func (c *ExtraConfig) complete() *completedExtraConfig {
 	return &completedExtraConfig{c}
 }
 
-// New create a grpcAPIServer instance.
-// func (c *completedExtraConfig) New() (*grpcAPIServer, error) {
-// 	creds, err := credentials.NewServerTLSFromFile(c.ServerCert.CertKey.CertFile, c.ServerCert.CertKey.KeyFile)
-// 	if err != nil {
-// 		log.Fatalf("Failed to generate credentials %s", err.Error())
-// 	}
-// 	opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(c.MaxMsgSize), grpc.Creds(creds)}
-// 	grpcServer := grpc.NewServer(opts...)
+//New create a grpcAPIServer instance.
+func (c *completedExtraConfig) New() (*grpcAPIServer, error) {
+	// creds, err := credentials.NewServerTLSFromFile(c.ServerCert.CertKey.CertFile, c.ServerCert.CertKey.KeyFile)
+	// if err != nil {
+	// 	log.Fatalf("Failed to generate credentials %s", err.Error())
+	// }
 
-// 	storeIns, _ := mysql.GetMySQLFactoryOr(c.mysqlOptions)
-// 	// storeIns, _ := etcd.GetEtcdFactoryOr(c.etcdOptions, nil)
-// 	store.SetClient(storeIns)
-// 	cacheIns, err := cachev1.GetCacheInsOr(storeIns)
-// 	if err != nil {
-// 		log.Fatalf("Failed to get cache instance: %s", err.Error())
-// 	}
+	//opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(c.MaxMsgSize), grpc.Creds(creds)}
+	opts := []grpc.ServerOption{grpc.MaxRecvMsgSize(c.MaxMsgSize)}
+	grpcServer := grpc.NewServer(opts...)
 
-// 	pb.RegisterCacheServer(grpcServer, cacheIns)
+	storeIns, _ := mysql.GetMySQLFactoryOr(c.mysqlOptions)
+	// storeIns, _ := etcd.GetEtcdFactoryOr(c.etcdOptions, nil)
+	store.SetClient(storeIns)
+	// cacheIns, err := cachev1.GetCacheInsOr(storeIns)
+	// if err != nil {
+	// 	log.Fatalf("Failed to get cache instance: %s", err.Error())
+	// }
 
-// 	reflection.Register(grpcServer)
+	// pb.RegisterCacheServer(grpcServer, cacheIns)
 
-// 	return &grpcAPIServer{grpcServer, c.Addr}, nil
-// }
+	reflection.Register(grpcServer)
+
+	return &grpcAPIServer{grpcServer, c.Addr}, nil
+}
 
 func buildGenericConfig(cfg *config.Config) (genericConfig *genericapiserver.Config, lastErr error) {
 	genericConfig = genericapiserver.NewConfig()
@@ -159,16 +166,16 @@ func buildGenericConfig(cfg *config.Config) (genericConfig *genericapiserver.Con
 	return
 }
 
-// //nolint: unparam
-// func buildExtraConfig(cfg *config.Config) (*ExtraConfig, error) {
-// 	return &ExtraConfig{
-// 		Addr:         fmt.Sprintf("%s:%d", cfg.GRPCOptions.BindAddress, cfg.GRPCOptions.BindPort),
-// 		MaxMsgSize:   cfg.GRPCOptions.MaxMsgSize,
-// 		ServerCert:   cfg.SecureServing.ServerCert,
-// 		mysqlOptions: cfg.MySQLOptions,
-// 		// etcdOptions:      cfg.EtcdOptions,
-// 	}, nil
-// }
+//nolint: unparam
+func buildExtraConfig(cfg *config.Config) (*ExtraConfig, error) {
+	return &ExtraConfig{
+		Addr:       fmt.Sprintf("%s:%d", cfg.GRPCOptions.BindAddress, cfg.GRPCOptions.BindPort),
+		MaxMsgSize: cfg.GRPCOptions.MaxMsgSize,
+		//ServerCert:   cfg.SecureServing.ServerCert,
+		mysqlOptions: cfg.MySQLOptions,
+		// etcdOptions:      cfg.EtcdOptions,
+	}, nil
+}
 
 func (s *apiServer) initRedisStore() {
 	ctx, cancel := context.WithCancel(context.Background())

@@ -4,7 +4,7 @@
 
 package store
 
-//go:generate mockgen -self_package=chat-go/1internal/apiserver/store -destination mock_store.go -package store chat-go/1internal/apiserver/store Factory,UserStore,SecretStore,PolicyStore
+//go:generate mockgen -self_package=easy-go/1internal/apiserver/store -destination mock_store.go -package store easy-go/1internal/apiserver/store Factory,UserStore,SecretStore,PolicyStore
 
 var client Factory
 
