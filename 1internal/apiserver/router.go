@@ -29,13 +29,16 @@ func printHello(c *gin.Context) {
 
 func installController(g *gin.Engine) *gin.Engine {
 	// Middlewares.
-	g.POST("/hello", printHello)
+	t := g.Group("/t")
+	{
+		jwtStrategy, _ := newJWTAuth().(auth.JWTStrategy)
+		t.Use(middleware.NewConnect())
+		t.POST("/login", jwtStrategy.LoginHandler)
 
-	jwtStrategy, _ := newJWTAuth().(auth.JWTStrategy)
-	g.POST("/login", jwtStrategy.LoginHandler)
-	g.POST("/logout", jwtStrategy.LogoutHandler)
-	// Refresh time can be longer than token timeout
-	g.POST("/refresh", jwtStrategy.RefreshHandler)
+		t.POST("/logout", jwtStrategy.LogoutHandler)
+		// Refresh time can be longer than token timeout
+		t.POST("/refresh", jwtStrategy.RefreshHandler)
+	}
 
 	auto := newAutoAuth()
 	g.NoRoute(auto.AuthFunc(), func(c *gin.Context) {

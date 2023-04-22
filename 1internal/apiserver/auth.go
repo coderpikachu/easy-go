@@ -124,6 +124,8 @@ func authenticator() func(c *gin.Context) (interface{}, error) {
 		} else {
 			log.Infof("%s log in", user.Name)
 		}
+		//set user name
+		c.Set(log.KeyUsername, user.Name)
 
 		// Compare the login password with the user password.
 		if err := user.Compare(login.Password); err != nil {

@@ -7,7 +7,6 @@ package mysql
 import (
 	"context"
 
-	"easy-go/2pkg/log"
 	v1 "easy-go/3api/apiserver/v1"
 
 	"github.com/marmotedu/component-base/pkg/fields"
@@ -75,9 +74,7 @@ func (u *users) DeleteCollection(ctx context.Context, usernames []string, opts m
 // Get return an user by the user identifier.
 func (u *users) Get(ctx context.Context, username string, opts metav1.GetOptions) (*v1.User, error) {
 	user := &v1.User{}
-	log.Debugf("start mysql0")
 	err := u.db.Where("name = ? and status = 1", username).First(&user).Error
-	log.Debugf("start mysql1")
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.WithCode(code.ErrUserNotFound, err.Error())
