@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -118,6 +119,20 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 	return preparedGenericAPIServer{s}
 }
 */
+func process(conn net.Conn) {
+	//这里需要延时关闭conn
+	defer conn.Close()
+
+	//这里调用总控, 创建一个
+	processor := &Processor{
+		Conn: conn,
+	}
+	err := processor.process2()
+	if err != nil {
+		log.Debugf("4alive 客户端和服务器通讯协程错误=err", err)
+		return
+	}
+}
 
 // Run spawns the http server. It only returns when the port cannot be listened on initially.
 func (s *GenericAPIServer) Run() error {
@@ -154,6 +169,24 @@ func (s *GenericAPIServer) Run() error {
 		}
 
 		log.Infof("Server on %s stopped", s.InsecureServingInfo.Address)
+
+		return nil
+	})
+	listen, err := net.Listen("tcp", "0.0.0.0:8889")
+	if err != nil {
+		log.Debugf("0alive err")
+
+		return err
+	}
+	//connect
+	eg.Go(func() error {
+		log.Debugf("1alive start: %s", 8889)
+		conn, err := listen.Accept()
+		if err != nil {
+			log.Debugf("2alive err=%s", err)
+		}
+		log.Debugf("3alive process start")
+		go process(conn)
 
 		return nil
 	})
