@@ -33,8 +33,9 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 
 	//我们需要到redis数据库去完成验证.
 	//1.使用model.MyUserDao 到redis去验证
-	//user, err := model.MyUserDao.Login(loginMes.UserId, loginMes.UserPwd)
 
+	log.Debugf("alive,prepare redis")
+	//user, err := model.MyUserDao.Login(loginMes.UserId, loginMes.UserPwd)
 	if err != nil {
 
 		// if err == model.ERROR_USER_NOTEXISTS {

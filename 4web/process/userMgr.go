@@ -14,7 +14,7 @@ var CurUser model.CurUser //我们在用户登录成功后，完成对CurUser初
 func outputOnlineUser() {
 	//遍历一把 onlineUsers
 	fmt.Println("当前在线用户列表:")
-	for id, _ := range onlineUsers {
+	for id := range onlineUsers {
 		//如果不显示自己.
 		fmt.Println("用户id:\t", id)
 	}
