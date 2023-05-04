@@ -1,10 +1,12 @@
 package model
 
 import (
+	"easy-go/1internal/pkg/code"
 	"encoding/json"
 	"fmt"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/marmotedu/errors"
 )
 
 //我们在服务器启动后，就初始化一个userDao实例，
@@ -38,18 +40,18 @@ func (this *UserDao) getUserById(conn redis.Conn, id int) (user *User, err error
 	if err != nil {
 		//错误!
 		if err == redis.ErrNil { //表示在 users 哈希中，没有找到对应id
-			err = ERROR_USER_NOTEXISTS
+			return nil, errors.WithCode(code.ErrUserNotFound, err.Error())
 		}
-		return
+		return nil, errors.WithCode(code.ErrUnknown, err.Error())
 	}
 	user = &User{}
 	//这里我们需要把res 反序列化成User实例
 	err = json.Unmarshal([]byte(res), user)
 	if err != nil {
 		fmt.Println("json.Unmarshal err=", err)
-		return
+		return nil, errors.WithCode(code.ErrJsonUnmarshal, err.Error())
 	}
-	return
+	return user, nil
 }
 
 //完成登录的校验 Login
@@ -63,14 +65,13 @@ func (this *UserDao) Login(userId int, userPwd string) (user *User, err error) {
 	defer conn.Close()
 	user, err = this.getUserById(conn, userId)
 	if err != nil {
-		return
+		return nil, err
 	}
 	//这时证明这个用户是获取到.
 	if user.UserPwd != userPwd {
-		err = ERROR_USER_PWD
-		return
+		return nil, errors.WithCode(code.ErrUserPasswordIncorrect, "")
 	}
-	return
+	return user, nil
 }
 
 func (this *UserDao) Register(user *User) (err error) {
@@ -80,19 +81,18 @@ func (this *UserDao) Register(user *User) (err error) {
 	defer conn.Close()
 	_, err = this.getUserById(conn, user.UserId)
 	if err == nil {
-		err = ERROR_USER_EXISTS
-		return
+		return errors.WithCode(code.ErrUserAlreadyExist, "")
 	}
 	//这时，说明id在redis还没有，则可以完成注册
 	data, err := json.Marshal(user) //序列化
 	if err != nil {
-		return
+		errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 	//入库
 	_, err = conn.Do("HSet", "users", user.UserId, string(data))
 	if err != nil {
 		fmt.Println("保存注册用户错误 err=", err)
-		return
+		return errors.WithCode(code.ErrDatabase, "")
 	}
-	return
+	return nil
 }

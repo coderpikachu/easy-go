@@ -1,11 +1,14 @@
 package process2
 
 import (
+	"easy-go/1internal/pkg/code"
 	"easy-go/1internal/pkg/util/transfer"
 	"easy-go/2pkg/log"
 	"easy-go/2pkg/model"
 	"encoding/json"
 	"net"
+
+	"github.com/marmotedu/errors"
 )
 
 type UserProcess struct {
@@ -28,7 +31,7 @@ func (this *UserProcess) NotifyOthersOnlineUser(userId int) {
 	}
 }
 
-func (this *UserProcess) NotifyMeOnline(userId int) {
+func (this *UserProcess) NotifyMeOnline(userId int) (err error) {
 
 	//组装我们的NotifyUserStatusMes
 	var mes model.Message
@@ -42,7 +45,7 @@ func (this *UserProcess) NotifyMeOnline(userId int) {
 	data, err := json.Marshal(notifyUserStatusMes)
 	if err != nil {
 		log.Debugf("json.Marshal err=", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 	//将序列化后的notifyUserStatusMes赋值给 mes.Data
 	mes.Data = string(data)
@@ -51,7 +54,7 @@ func (this *UserProcess) NotifyMeOnline(userId int) {
 	data, err = json.Marshal(mes)
 	if err != nil {
 		log.Debugf("json.Marshal err=", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 
 	//发送,创建我们Transfer实例，发送
@@ -64,6 +67,7 @@ func (this *UserProcess) NotifyMeOnline(userId int) {
 		log.Debugf("NotifyMeOnline err=", err)
 		return
 	}
+	return nil
 }
 func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
 
@@ -72,7 +76,7 @@ func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
 	err = json.Unmarshal([]byte(mes.Data), &registerMes)
 	if err != nil {
 		log.Debugf("json.Unmarshal fail err=", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 
 	//1先声明一个 resMes
@@ -85,13 +89,9 @@ func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
 	err = model.MyUserDao.Register(&registerMes.User)
 
 	if err != nil {
-		if err == model.ERROR_USER_EXISTS {
-			registerResMes.Code = 505
-			registerResMes.Error = model.ERROR_USER_EXISTS.Error()
-		} else {
-			registerResMes.Code = 506
-			registerResMes.Error = "注册发生未知错误..."
-		}
+		coder := errors.ParseCoder(err)
+		registerResMes.Code = coder.Code()
+		registerResMes.Error = coder.String()
 	} else {
 		registerResMes.Code = 200
 	}
@@ -99,7 +99,7 @@ func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
 	data, err := json.Marshal(registerResMes)
 	if err != nil {
 		log.Debugf("json.Marshal fail", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 
 	//4. 将data 赋值给 resMes
@@ -109,7 +109,7 @@ func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
 	data, err = json.Marshal(resMes)
 	if err != nil {
 		log.Debugf("json.Marshal fail", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 	//6. 发送data, 我们将其封装到writePkg函数
 	//因为使用分层模式(mvc), 我们先创建一个Transfer 实例，然后读取
@@ -130,7 +130,7 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 	err = json.Unmarshal([]byte(mes.Data), &loginMes)
 	if err != nil {
 		log.Debugf("json.Unmarshal fail err=", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 	//1先声明一个 resMes
 	var resMes model.Message
@@ -144,18 +144,10 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 	log.Debugf("alive,prepare redis")
 	user, err := model.MyUserDao.Login(loginMes.UserId, loginMes.UserPwd)
 	if err != nil {
-
-		if err == model.ERROR_USER_NOTEXISTS {
-			loginResMes.Code = 500
-			loginResMes.Error = err.Error()
-		} else if err == model.ERROR_USER_PWD {
-			loginResMes.Code = 403
-			loginResMes.Error = err.Error()
-		} else {
-			loginResMes.Code = 505
-			loginResMes.Error = "服务器内部错误..."
-		}
-		log.Debugf("%v %v", loginResMes.Code, loginResMes.Error)
+		coder := errors.ParseCoder(err)
+		loginResMes.Code = coder.Code()
+		loginResMes.Error = coder.String()
+		log.Debugf("%v %v %v", loginResMes.Code, coder.HTTPStatus(), loginResMes.Error)
 
 	} else {
 		loginResMes.Code = 200
@@ -189,7 +181,7 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 	data, err := json.Marshal(loginResMes)
 	if err != nil {
 		log.Debugf("json.Marshal fail", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 
 	//4. 将data 赋值给 resMes
@@ -199,7 +191,7 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 	data, err = json.Marshal(resMes)
 	if err != nil {
 		log.Debugf("json.Marshal fail", err)
-		return
+		return errors.WithCode(code.ErrJsonUnmarshal, "")
 	}
 	//6. 发送data, 我们将其封装到writePkg函数
 	//因为使用分层模式(mvc), 我们先创建一个Transfer 实例，然后读取
