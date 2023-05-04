@@ -9,11 +9,13 @@ import (
 	"easy-go/1internal/apiserver/config"
 	"easy-go/1internal/apiserver/store"
 	"fmt"
+	"time"
 
 	"easy-go/1internal/apiserver/store/mysql"
 	genericoptions "easy-go/1internal/pkg/options"
 	genericapiserver "easy-go/1internal/pkg/server"
 	"easy-go/2pkg/log"
+	"easy-go/2pkg/model"
 	"easy-go/2pkg/shutdown"
 	"easy-go/2pkg/shutdown/shutdownmanagers/posixsignal"
 	"easy-go/2pkg/storage"
@@ -74,11 +76,17 @@ func createAPIServer(cfg *config.Config) (*apiServer, error) {
 
 	return server, nil
 }
-
+func (s *apiServer) initRawRedisStore() {
+	model.InitPool("localhost:6379", 16, 0, 300*time.Second)
+	model.MyUserDao = model.NewUserDao(model.Pool)
+	log.Debugf("alive:pool init")
+}
 func (s *apiServer) PrepareRun() preparedAPIServer {
 	initRouter(s.genericAPIServer.Engine)
 
 	s.initRedisStore()
+
+	s.initRawRedisStore()
 
 	s.gs.AddShutdownCallback(shutdown.ShutdownFunc(func(string) error {
 		mysqlStore, _ := mysql.GetMySQLFactoryOr(nil)

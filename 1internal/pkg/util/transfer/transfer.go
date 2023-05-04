@@ -30,6 +30,7 @@ func (this *Transfer) ReadPkg() (mes model.Message, err error) {
 	var pkgLen uint32
 	pkgLen = binary.BigEndian.Uint32(this.Buf[0:4])
 	//根据 pkgLen 读取消息内容
+	log.Debugf("%d", pkgLen)
 	n, err := this.Conn.Read(this.Buf[:pkgLen])
 	if n != int(pkgLen) || err != nil {
 		//err = errors.New("read pkg body error")

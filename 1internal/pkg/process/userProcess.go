@@ -35,19 +35,19 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 	//1.使用model.MyUserDao 到redis去验证
 
 	log.Debugf("alive,prepare redis")
-	//user, err := model.MyUserDao.Login(loginMes.UserId, loginMes.UserPwd)
+	user, err := model.MyUserDao.Login(loginMes.UserId, loginMes.UserPwd)
 	if err != nil {
 
-		// if err == model.ERROR_USER_NOTEXISTS {
-		// 	loginResMes.Code = 500
-		// 	loginResMes.Error = err.Error()
-		// } else if err == model.ERROR_USER_PWD {
-		// 	loginResMes.Code = 403
-		// 	loginResMes.Error = err.Error()
-		// } else {
-		// 	loginResMes.Code = 505
-		// 	loginResMes.Error = "服务器内部错误..."
-		// }
+		if err == model.ERROR_USER_NOTEXISTS {
+			loginResMes.Code = 500
+			loginResMes.Error = err.Error()
+		} else if err == model.ERROR_USER_PWD {
+			loginResMes.Code = 403
+			loginResMes.Error = err.Error()
+		} else {
+			loginResMes.Code = 505
+			loginResMes.Error = "服务器内部错误..."
+		}
 
 	} else {
 		loginResMes.Code = 200
@@ -62,19 +62,19 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 		// for id, _ := range userMgr.onlineUsers {
 		// 	loginResMes.UsersId = append(loginResMes.UsersId, id)
 		// }
-		//log.Debugf(user, "登录成功")
+		log.Debugf(user.UserName, "登录成功")
 	}
 	// //如果用户id= 100， 密码=123456, 认为合法，否则不合法
 
-	// if loginMes.UserId == 100 && loginMes.UserPwd == "123456" {
-	// 	//合法
-	// 	loginResMes.Code = 200
+	if loginMes.UserId == 1 && loginMes.UserPwd == "1" {
+		//合法
+		loginResMes.Code = 200
 
-	// } else {
-	// 	//不合法
-	// 	loginResMes.Code = 500 // 500 状态码，表示该用户不存在
-	// 	loginResMes.Error = "该用户不存在, 请注册再使用..."
-	// }
+	} else {
+		//不合法
+		loginResMes.Code = 500 // 500 状态码，表示该用户不存在
+		loginResMes.Error = "该用户不存在, 请注册再使用..."
+	}
 
 	//3将 loginResMes 序列化
 	data, err := json.Marshal(loginResMes)
@@ -98,5 +98,6 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 		Conn: this.Conn,
 	}
 	err = tf.WritePkg(data)
+	log.Debugf("alive end")
 	return
 }
