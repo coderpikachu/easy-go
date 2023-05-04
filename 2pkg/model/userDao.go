@@ -1,7 +1,6 @@
 package model
 
 import (
-	"easy-go/4web/zCommon/message"
 	"encoding/json"
 	"fmt"
 
@@ -74,7 +73,7 @@ func (this *UserDao) Login(userId int, userPwd string) (user *User, err error) {
 	return
 }
 
-func (this *UserDao) Register(user *message.User) (err error) {
+func (this *UserDao) Register(user *User) (err error) {
 
 	//先从UserDao 的连接池中取出一根连接
 	conn := this.pool.Get()

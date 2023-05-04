@@ -15,6 +15,63 @@ type UserProcess struct {
 	UserId int
 }
 
+func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
+
+	//1.先从mes 中取出 mes.Data ，并直接反序列化成RegisterMes
+	var registerMes model.RegisterMes
+	err = json.Unmarshal([]byte(mes.Data), &registerMes)
+	if err != nil {
+		log.Debugf("json.Unmarshal fail err=", err)
+		return
+	}
+
+	//1先声明一个 resMes
+	var resMes model.Message
+	resMes.Type = model.RegisterResMesType
+	var registerResMes model.RegisterResMes
+
+	//我们需要到redis数据库去完成注册.
+	//1.使用model.MyUserDao 到redis去验证
+	err = model.MyUserDao.Register(&registerMes.User)
+
+	if err != nil {
+		if err == model.ERROR_USER_EXISTS {
+			registerResMes.Code = 505
+			registerResMes.Error = model.ERROR_USER_EXISTS.Error()
+		} else {
+			registerResMes.Code = 506
+			registerResMes.Error = "注册发生未知错误..."
+		}
+	} else {
+		registerResMes.Code = 200
+	}
+
+	data, err := json.Marshal(registerResMes)
+	if err != nil {
+		log.Debugf("json.Marshal fail", err)
+		return
+	}
+
+	//4. 将data 赋值给 resMes
+	resMes.Data = string(data)
+
+	//5. 对resMes 进行序列化，准备发送
+	data, err = json.Marshal(resMes)
+	if err != nil {
+		log.Debugf("json.Marshal fail", err)
+		return
+	}
+	//6. 发送data, 我们将其封装到writePkg函数
+	//因为使用分层模式(mvc), 我们先创建一个Transfer 实例，然后读取
+	tf := &transfer.Transfer{
+		Conn: this.Conn,
+	}
+	err = tf.WritePkg(data)
+	log.Debugf("alive:register end")
+	return
+
+}
+
 //编写一个函数serverProcessLogin函数， 专门处理登录请求
 func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 	//核心代码...
