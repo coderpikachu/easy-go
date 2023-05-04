@@ -179,7 +179,7 @@ func (s *GenericAPIServer) Run() error {
 		return err
 	}
 	//connect
-	eg.Go(func() error {
+	for {
 		log.Debugf("1alive start: %s", 8889)
 		conn, err := listen.Accept()
 		if err != nil {
@@ -187,9 +187,7 @@ func (s *GenericAPIServer) Run() error {
 		}
 		log.Debugf("3alive process start")
 		go process(conn)
-
-		return nil
-	})
+	}
 
 	// eg.Go(func() error {
 	// 	key, cert := s.SecureServingInfo.CertKey.KeyFile, s.SecureServingInfo.CertKey.CertFile

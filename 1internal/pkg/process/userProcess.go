@@ -15,6 +15,56 @@ type UserProcess struct {
 	UserId int
 }
 
+func (this *UserProcess) NotifyOthersOnlineUser(userId int) {
+
+	//遍历 onlineUsers, 然后一个一个的发送 NotifyUserStatusMes
+	for id, up := range userMgr.onlineUsers {
+		//过滤到自己
+		if id == userId {
+			continue
+		}
+		//开始通知【单独的写一个方法】
+		up.NotifyMeOnline(userId)
+	}
+}
+
+func (this *UserProcess) NotifyMeOnline(userId int) {
+
+	//组装我们的NotifyUserStatusMes
+	var mes model.Message
+	mes.Type = model.NotifyUserStatusMesType
+
+	var notifyUserStatusMes model.NotifyUserStatusMes
+	notifyUserStatusMes.UserId = userId
+	notifyUserStatusMes.Status = model.UserOnline
+
+	//将notifyUserStatusMes序列化
+	data, err := json.Marshal(notifyUserStatusMes)
+	if err != nil {
+		log.Debugf("json.Marshal err=", err)
+		return
+	}
+	//将序列化后的notifyUserStatusMes赋值给 mes.Data
+	mes.Data = string(data)
+
+	//对mes再次序列化，准备发送.
+	data, err = json.Marshal(mes)
+	if err != nil {
+		log.Debugf("json.Marshal err=", err)
+		return
+	}
+
+	//发送,创建我们Transfer实例，发送
+	tf := &transfer.Transfer{
+		Conn: this.Conn,
+	}
+
+	err = tf.WritePkg(data)
+	if err != nil {
+		log.Debugf("NotifyMeOnline err=", err)
+		return
+	}
+}
 func (this *UserProcess) ServerProcessRegister(mes *model.Message) (err error) {
 
 	//1.先从mes 中取出 mes.Data ，并直接反序列化成RegisterMes
@@ -105,33 +155,35 @@ func (this *UserProcess) ServerProcessLogin(mes *model.Message) (err error) {
 			loginResMes.Code = 505
 			loginResMes.Error = "服务器内部错误..."
 		}
+		log.Debugf("%v %v", loginResMes.Code, loginResMes.Error)
 
 	} else {
 		loginResMes.Code = 200
 		//这里，因为用户登录成功，我们就把该登录成功的用放入到userMgr中
 		//将登录成功的用户的userId 赋给 this
 		this.UserId = loginMes.UserId
-		// userMgr.AddOnlineUser(this)
-		// //通知其它的在线用户， 我上线了
-		// this.NotifyOthersOnlineUser(loginMes.UserId)
-		// //将当前在线用户的id 放入到loginResMes.UsersId
-		// //遍历 userMgr.onlineUsers
-		// for id, _ := range userMgr.onlineUsers {
-		// 	loginResMes.UsersId = append(loginResMes.UsersId, id)
-		// }
+		userMgr.AddOnlineUser(this)
+		//通知其它的在线用户， 我上线了
+		this.NotifyOthersOnlineUser(loginMes.UserId)
+		//将当前在线用户的id 放入到loginResMes.UsersId
+		//遍历 userMgr.onlineUsers
+		for id, _ := range userMgr.onlineUsers {
+			loginResMes.UsersId = append(loginResMes.UsersId, id)
+		}
 		log.Debugf(user.UserName, "登录成功")
 	}
+
 	// //如果用户id= 100， 密码=123456, 认为合法，否则不合法
 
-	if loginMes.UserId == 1 && loginMes.UserPwd == "1" {
-		//合法
-		loginResMes.Code = 200
+	// if loginMes.UserId == 1 && loginMes.UserPwd == "1" {
+	// 	//合法
+	// 	loginResMes.Code = 200
 
-	} else {
-		//不合法
-		loginResMes.Code = 500 // 500 状态码，表示该用户不存在
-		loginResMes.Error = "该用户不存在, 请注册再使用..."
-	}
+	// } else {
+	// 	//不合法
+	// 	loginResMes.Code = 500 // 500 状态码，表示该用户不存在
+	// 	loginResMes.Error = "该用户不存在, 请注册再使用..."
+	// }
 
 	//3将 loginResMes 序列化
 	data, err := json.Marshal(loginResMes)

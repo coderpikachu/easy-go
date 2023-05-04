@@ -60,10 +60,10 @@ func (this *Processor) serverProcessMes(mes *model.Message) (err error) {
 			Conn: this.Conn,
 		}
 		err = up.ServerProcessRegister(mes) // type : data
-	// case model.SmsMesType:
-	// 	//创建一个SmsProcess实例完成转发群聊消息.
-	// 	smsProcess := &process2.SmsProcess{}
-	// 	smsProcess.SendGroupMes(mes)
+	case model.SmsMesType:
+		//创建一个SmsProcess实例完成转发群聊消息.
+		smsProcess := &process2.SmsProcess{}
+		smsProcess.SendGroupMes(mes)
 	default:
 		log.Debugf("9 消息类型不存在，无法处理...")
 	}
